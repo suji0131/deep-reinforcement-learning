@@ -3,7 +3,8 @@ import sys
 import math
 import numpy as np
 
-def interact(env, agent, num_episodes=20000, window=100):
+
+def interact(env, agent, num_episodes=25000, window=100):
     """ Monitor agent's performance.
     
     Params
@@ -28,11 +29,15 @@ def interact(env, agent, num_episodes=20000, window=100):
     for i_episode in range(1, num_episodes+1):
         # begin the episode
         state = env.reset()
+        # set epsilon value
+        epsilon = 1 / i_episode
+        # if epsilon < 0.05:
+        #    epsilon = 0.05
         # initialize the sampled reward
         samp_reward = 0
         while True:
             # agent selects an action
-            action = agent.select_action(state)
+            action = agent.select_action(state, epsilon=epsilon)
             # agent performs the selected action
             next_state, reward, done, _ = env.step(action)
             # agent performs internal updates based on sampled experience
@@ -45,7 +50,7 @@ def interact(env, agent, num_episodes=20000, window=100):
                 # save final sampled reward
                 samp_rewards.append(samp_reward)
                 break
-        if (i_episode >= 100):
+        if i_episode >= 100:
             # get average reward from last 100 episodes
             avg_reward = np.mean(samp_rewards)
             # append to deque

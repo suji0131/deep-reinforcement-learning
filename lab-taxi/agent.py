@@ -1,20 +1,21 @@
 import numpy as np
 from collections import defaultdict
 
+
 class Agent:
 
-    def __init__(self, nA=6):
+    def __init__(self, no_of_actions=6):
         """ Initialize agent.
 
         Params
         ======
-        - nA: number of actions available to the agent
+        - no_of_actions: number of actions available to the agent
         """
-        self.nA = nA
-        self.Q = defaultdict(lambda: np.zeros(self.nA))
+        self.no_of_actions = no_of_actions
+        self.Q = defaultdict(lambda: np.zeros(self.no_of_actions))
 
-    def select_action(self, state):
-        """ Given the state, select an action.
+    def select_action(self, state, epsilon=0.05) -> int:
+        """ Given the state, select an action. Using e-greedy policy.
 
         Params
         ======
@@ -24,9 +25,22 @@ class Agent:
         =======
         - action: an integer, compatible with the task's action space
         """
-        return np.random.choice(self.nA)
+        # generate which policy to
+        # choose "greedy"(exploitation) or "non-greedy"(exploration)
+        policy_probs = [1 - epsilon, epsilon]  # ["greedy"(exploitation), "non-greedy"(exploration)]
+        policy_method = np.random.choice(np.arange(2), p=policy_probs)
 
-    def step(self, state, action, reward, next_state, done):
+        if policy_method == 0:  # "greedy"(exploitation)
+            action = np.argmax(self.Q[state])
+        elif policy_method == 1:  # "non-greedy"(exploration)
+            probs = [1 / self.no_of_actions for _ in range(self.no_of_actions)]
+            action = np.random.choice(np.arange(self.no_of_actions), p=probs)
+        else:
+            raise ValueError("Policy generated is out-of-bounds.")
+
+        return action
+
+    def step(self, state, action, reward, next_state, done, gamma=1.0, alpha=.01):
         """ Update the agent's knowledge, using the most recently sampled tuple.
 
         Params
@@ -37,4 +51,15 @@ class Agent:
         - next_state: the current state of the environment
         - done: whether the episode is complete (True or False)
         """
-        self.Q[state][action] += 1
+        if done:
+            expected_return_next_step = 0
+        else:
+            # SarsaMax or Q-learning.
+            expected_return_next_step = np.max(self.Q[next_state])
+
+        self.Q[state][action] += alpha * (
+            reward
+            + (gamma * expected_return_next_step)
+            - self.Q[state][action]
+        )
+        return 0
